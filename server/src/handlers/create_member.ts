@@ -1,19 +1,31 @@
 
+import { db } from '../db';
+import { membersTable } from '../db/schema';
 import { type CreateMemberInput, type Member } from '../schema';
 
 export const createMember = async (input: CreateMemberInput): Promise<Member> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new member and persisting it in the database.
-    // Only admin users should be able to perform this operation.
-    // Password should be hashed before storing in the database.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+  try {
+    // Hash the password before storing
+    const hashedPassword = await Bun.password.hash(input.password);
+
+    // Insert member record
+    const result = await db.insert(membersTable)
+      .values({
         full_name: input.full_name,
         address: input.address,
         phone_number: input.phone_number,
         email: input.email,
         username: input.username,
-        password: input.password, // In real implementation, this should be hashed
-        created_at: new Date() // Placeholder date
-    } as Member);
+        password: hashedPassword
+      })
+      .returning()
+      .execute();
+
+    // Return the created member
+    const member = result[0];
+    return member;
+  } catch (error) {
+    console.error('Member creation failed:', error);
+    throw error;
+  }
 };
